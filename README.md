@@ -5,6 +5,20 @@ Ghost_Alert is an ultra-low-power, ambient RF backscatter system designed for ea
 
 Traditional IoT remote sensor networks require batteries, which are expensive to maintain and environmentally toxic to replace at scale. This project aims to build a network of "zero-power" sensor nodes that harvest their operating energy entirely from surrounding ambient radio waves (such as 4G LTE or Wi-Fi). These nodes monitor for real-world environmental hazards like, wildlife road crossings, track intrusions or landslides, and transmit alerts back to a central gateway without ever needing a battery or mains power.
 
+## 📊 Current Solution Summary
+
+| Solution | Power Model | Carrier / Communication | Main Limitation |
+| --- | --- | --- | --- |
+| Active WSNs (LoRa, NB-IoT, Zigbee) | Battery or solar powered | Nodes generate their own RF transmission | Ongoing maintenance, battery replacement, and solar dependency |
+| Traditional RFID / Dedicated Backscatter | Battery-free at the tag | Requires a dedicated reader or emitter | Very short range and high infrastructure density |
+| Ambient IoT / Ambient Backscatter | Harvests energy from existing RF signals | Piggybacks on ambient 4G / Wi-Fi signals | Still difficult to scale outdoors because of weak signals and interference |
+
+## ✅ Our Solution: Ghost_Alert
+
+Ghost_Alert combines ambient RF harvesting with threshold-based sensing and gateway-side signal recovery. The sensor node stays in deep sleep until enough harvested energy is available, then wakes only when a hazard condition is detected. Instead of generating a new radio carrier, it modulates ambient waves already present in the environment, which removes the battery replacement problem and avoids the need for dedicated RF readers.
+
+At the gateway, the system performs interference cancellation and decoding to extract the weak backscatter signal from the stronger ambient carrier. That decoded event is then turned into a real-time alert, with support for C-V2X dissemination so the warning can reach nearby vehicles quickly.
+
 ## 🚀 How It Works
 
 The system architecture is divided into two main components:
@@ -45,9 +59,27 @@ The system architecture is divided into two main components:
 
 * **NFR4: Latency (Real-Time Processing):** The gateway shall process incoming backscatter data, classify the hazard, and initiate the outbound C-V2X warning broadcast with an end-to-end latency not exceeding 500 milliseconds.
 
-## 🛠️ Current Status
-* **Phase:** Defined Conceptual Architecture and  Functional and Non-Functional requirements.
-* **Next Steps:** 
-  * Prototype the RF energy harvesting circuit.
-  * Test ultra-low-power MCU sleep/wake cycles.
-  * Develop the backscatter modulation logic.
+## 🧰 Hardware Research
+
+### 1. Passive Sensor Nodes
+
+| Component | Prototype Recommendation |
+| --- | --- |
+| RF Energy Harvester | Dickson charge pump with HSMS-285C |
+| Storage Element | 0.1F to 1F supercapacitor, 5.5V |
+| Microcontroller | ATtiny85 |
+| Backscatter Switch | SKY13351 |
+| Sensors | HC-SR501 PIR(LDO removed), Ultra-Low-Power MEMS Accelerometer, Capacitive Soil Moisture Sensor |
+
+### 2. Smart Gateway
+
+| Component | Prototype Recommendation |
+| --- | --- |
+| RF Transceiver / SDR | RTL-SDR Blog V4 |
+| Edge Processor | Raspberry Pi board |
+| V2X / Cloud Module | ESP32 |
+
+
+
+
+
