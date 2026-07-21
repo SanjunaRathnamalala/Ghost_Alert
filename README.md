@@ -1,11 +1,11 @@
 # Ghost_Alert: IoT Hazard Detection system with zero-powered sensor nodes
 
-## 📌 Project Overview
+## Project Overview
 Ghost_Alert is an ultra-low-power, ambient RF backscatter system designed for early hazard detection. 
 
 Traditional IoT remote sensor networks require batteries, which are expensive to maintain and environmentally toxic to replace at scale. This project aims to build a network of "zero-power" sensor nodes that harvest their operating energy entirely from surrounding ambient radio waves (such as 4G LTE or Wi-Fi). These nodes monitor for real-world environmental hazards like, wildlife road crossings, track intrusions or landslides, and transmit alerts back to a central gateway without ever needing a battery or mains power.
 
-## 📊 Current Solution Summary
+## Current Solution Summary
 
 | Solution | Power Model | Carrier / Communication | Main Limitation |
 | --- | --- | --- | --- |
@@ -13,13 +13,13 @@ Traditional IoT remote sensor networks require batteries, which are expensive to
 | Traditional RFID / Dedicated Backscatter | Battery-free at the tag | Requires a dedicated reader or emitter | Very short range and high infrastructure density |
 | Ambient IoT / Ambient Backscatter | Harvests energy from existing RF signals | Piggybacks on ambient 4G / Wi-Fi signals | Still difficult to scale outdoors because of weak signals and interference |
 
-## ✅ Our Solution: Ghost_Alert
+## Our Solution: Ghost_Alert
 
 Ghost_Alert combines ambient RF harvesting with threshold-based sensing and gateway-side signal recovery. The sensor node stays in deep sleep until enough harvested energy is available, then wakes only when a hazard condition is detected. Instead of generating a new radio carrier, it modulates ambient waves already present in the environment, which removes the battery replacement problem and avoids the need for dedicated RF readers.
 
 At the gateway, the system performs interference cancellation and decoding to extract the weak backscatter signal from the stronger ambient carrier. That decoded event is then turned into a real-time alert, with support for C-V2X dissemination so the warning can reach nearby vehicles quickly.
 
-## 🚀 How It Works
+## How It Works
 
 The system architecture is divided into two main components:
 
@@ -32,8 +32,8 @@ The system architecture is divided into two main components:
 * **Signal Decoding:** A powered roadside gateway receives the backscattered signals. It uses interference cancellation to filter out the loud ambient waves and isolate the faint, reflected sensor data.
 * **Alert Broadcasting:** Once the hazard data is processed, the gateway rebroadcasts a formatted, high-power warning to approaching vehicles (via V2X communication) or uploads the alert to a cloud-based mapping platform.
 
-## ⚙️ Requirements
-### 👔 Functional Requirements
+## Requirements
+### Functional Requirements
 
 * **FR1: Energy Harvesting & Transmission:** The passive sensor node shall harvest ambient RF energy to charge its internal capacitor and, upon reaching the required voltage threshold, execute a sensor reading and transmit the telemetry data via RF backscatter modulation.
 
@@ -49,7 +49,7 @@ The system architecture is divided into two main components:
 
 * **FR7: State Health Monitoring (Heartbeats):** Even in the absence of a hazard trigger, the sensor nodes shall execute a minimal "heartbeat" transmission every 2 hours to confirm operational status and ambient harvesting capability.
 
-### 👕 Non-Functional Requirements
+### Non-Functional Requirements
 
 * **NFR1: Performance (Duty Cycle):** The passive sensor node shall achieve a maximum data transmission interval of 2 seconds when operating in an environment with a minimum ambient RF power density of -20dBm.
 
@@ -59,7 +59,7 @@ The system architecture is divided into two main components:
 
 * **NFR4: Latency (Real-Time Processing):** The gateway shall process incoming backscatter data, classify the hazard, and initiate the outbound C-V2X warning broadcast with an end-to-end latency not exceeding 500 milliseconds.
 
-## 🧰 Hardware Research
+## Hardware Research
 
 ### 1. Passive Sensor Nodes
 
