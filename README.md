@@ -32,6 +32,11 @@ The system architecture is divided into two main components:
 * **Signal Decoding:** A powered roadside gateway receives the backscattered signals. It uses interference cancellation to filter out the loud ambient waves and isolate the faint, reflected sensor data.
 * **Alert Broadcasting:** Once the hazard data is processed, the gateway rebroadcasts a formatted, high-power warning to approaching vehicles (via V2X communication) or uploads the alert to a cloud-based mapping platform.
 
+## System Architecture Diagram
+
+![System Architecture Diagram](Ghost_Alert_System_Architecture.png)
+
+
 ## Requirements
 ### Functional Requirements
 
