@@ -1,4 +1,4 @@
-# Ghost_Alert: IoT Hazard Detection system with zero-powered sensor nodes
+# Ghost_Alert: Predictive IoT Hazard Detection system
 
 ## Table of Contents
 
@@ -10,133 +10,94 @@
 6. [Requirements](#6-requirements)
 7. [Hardware Research](#7-hardware-research)
 8. [Project Timeline](#8-project-timeline)
+9. [Project Resources](#9-project-resources)
 
 ## 1. Project Overview
-Ghost_Alert is an ultra-low-power, ambient RF backscatter system designed for early hazard detection. 
+Ghost_Alert is an end-to-end IoT monitoring network designed for the predictive early warning of environmental hazards.
 
-Traditional IoT remote sensor networks require batteries, which are expensive to maintain and environmentally toxic to replace at scale. This project aims to build a network of "zero-power" sensor nodes that harvest their operating energy entirely from surrounding ambient radio waves (such as 4G LTE or Wi-Fi). These nodes monitor for real-world environmental hazards like, wildlife road crossings, track intrusions or landslides, and transmit alerts back to a central gateway without ever needing a battery or mains power.
+Traditional environmental monitoring relies on reactive sensors that only trigger after a disaster has occurred, or highly expensive industrial equipment that is difficult to scale. This project aims to bridge that gap by deploying a network of low-cost, active sensor nodes. By feeding high-frequency telemetry (soil saturation, micro-displacement, and motion events) into a time-series database, Ghost_Alert utilizes rolling rate-of-change analytics to predict catastrophic failures—such as landslides—before they happen, visualizing the threat on a real-time digital twin dashboard.
 
 ## 2. Current Solution Summary
 
-| Solution | Power Model | Carrier / Communication | Main Limitation |
+| Solution | Sensor Intelligence | Data Architecture | Main Limitation |
 | --- | --- | --- | --- |
-| Active WSNs (LoRa, NB-IoT, Zigbee) | Battery or solar powered | Nodes generate their own RF transmission | Ongoing maintenance, battery replacement, and solar dependency |
-| Traditional RFID / Dedicated Backscatter | Battery-free at the tag | Requires a dedicated reader or emitter | Very short range and high infrastructure density |
-| Ambient IoT / Ambient Backscatter | Harvests energy from existing RF signals | Piggybacks on ambient 4G / Wi-Fi signals | Still difficult to scale outdoors because of weak signals and interference |
+| Basic IoT Thresholds | Reactive (Triggers when wet) | Relational SQL databases | Fails to predict velocity of change; high false-positive rate. |
+| Industrial Geotech | Highly accurate, predictive | Proprietary, expensive software | Cost-prohibitive to deploy at scale across vast remote road networks. |
+| **Ghost_Alert** | Predictive (Sensor Fusion) | Hybrid (PostgreSQL + InfluxDB) | Strikes a balance between low-cost edge hardware and advanced cloud analytics. |
 
 ## 3. Our Solution: Ghost_Alert
 
-Ghost_Alert combines ambient RF harvesting with threshold-based sensing and gateway-side signal recovery. The sensor node stays in deep sleep until enough harvested energy is available, then wakes only when a hazard condition is detected. Instead of generating a new radio carrier, it modulates ambient waves already present in the environment, which removes the battery replacement problem and avoids the need for dedicated RF readers.
+Ghost_Alert shifts the paradigm from *reactive alerting* to *predictive analytics*.
 
-At the gateway, the system performs interference cancellation and decoding to extract the weak backscatter signal from the stronger ambient carrier. That decoded event is then turned into a real-time alert, with support for C-V2X dissemination so the warning can reach nearby vehicles quickly.
+Instead of relying on a single static threshold, the system fuses data from multiple sensors (e.g., ADXL362 accelerometers and capacitive soil sensors) and evaluates them using a time-series database. By calculating the velocity of soil saturation over a sliding 15-minute window and cross-referencing it with gravitational micro-creep, the system can determine if a slope is actively failing. This data is ingested via a lightning-fast Python API and immediately projected onto a custom React-based administrative map for rapid response.
 
 ## 4. How It Works
 
-The system architecture is divided into two main components:
+The finalized Ghost_Alert architecture is divided into three functional layers, bridging autonomous edge hardware with a predictive cloud pipeline:
 
-### 1. The Passive Sensor Nodes (The "Ghosts")
-* **Energy Harvesting:** The nodes capture ambient RF energy from the environment using an antenna and a highly efficient rectifier circuit, storing it in a supercapacitor.
-* **Sensing:** Once enough energy is harvested, an ultra-low-power microcontroller wakes up to take a reading from a connected sensor (e.g., PIR motion, soil moisture).
-* **Backscatter Modulation:** Instead of generating their own radio waves to transmit the data (which consumes too much power), the nodes use an RF switch to alter their antenna's impedance. This acts as an "RF mirror," embedding the sensor data into the reflected ambient radio waves.
+### 1. The Autonomous Edge Nodes (Hardware)
 
-### 2. The Smart Gateway
-* **Signal Decoding:** A powered roadside gateway receives the backscattered signals. It uses interference cancellation to filter out the loud ambient waves and isolate the faint, reflected sensor data.
-* **Alert Broadcasting:** Once the hazard data is processed, the gateway rebroadcasts a formatted, high-power warning to approaching vehicles (via V2X communication) or uploads the alert to a cloud-based mapping platform.
+- **Power & Harvesting:** Nodes are completely grid-independent. They are powered by 3.7V 18650 Li-Ion cells, trickle-charged continuously by 5V mini solar panels via TP4056 protection modules.
+- **Sensing & Processing:** An ultra-low-power microcontroller (Arduino Pro Mini 3.3V) manages the sensor payloads. It remains in deep sleep, waking only on interrupt (PIR motion) or scheduled intervals (landslide telemetry) to conserve power.
+- **LPWAN Transmission:** Data is transmitted over long distances using SX1278 (433MHz) LoRa transceiver modules, bypassing the need for local Wi-Fi or cellular connections at the edge.
+
+### 2. The Smart Gateway (Edge Processing)
+
+- **LoRa Reception:** A locally deployed Raspberry Pi (Pi 3B+) acts as the central hub, equipped with a matching LoRa receiver to catch telemetry from all nodes within a multi-kilometer radius.
+- **Forwarding:** The gateway formats the raw LoRa packets into structured JSON and pushes them over a secure internet connection to the cloud API.
+
+### 3. Cloud Pipeline & The Digital Twin (Backend/Frontend)
+
+- **Ingestion & Storage:** A FastAPI engine receives the payloads. Relational data (node lifecycles, active hazards) is stored in PostgreSQL, while high-frequency telemetry (voltage, moisture, tilt) streams into InfluxDB.
+- **Predictive Logic:** Flux queries analyze historical data windows, applying rate-of-change mathematics to predict slope failures before they happen.
+- **Visualization:** A React-based Leaflet web application serves as the command center, plotting live node health and highlighting active 50m hazard zones in real time.
 
 ## 5. System Architecture Diagram
 
-<figure>
-	<img src="Images/Ghost_Alert_System_Architecture.png" alt="System Architecture Diagram" />
-	<figcaption>System Architecture Diagram</figcaption>
-</figure>
+
 
 
 ## 6. Requirements
+
 ### Functional Requirements
 
-* **FR1: Energy Harvesting & Transmission:** The passive sensor node shall harvest ambient RF energy to charge its internal capacitor and, upon reaching the required voltage threshold, execute a sensor reading and transmit the telemetry data via RF backscatter modulation.
-
-* **FR2: Signal Isolation:** The gateway shall utilize self-interference cancellation to actively filter out ambient RF carrier waves (e.g., 4G LTE) and isolate the backscattered telemetry signals from the sensor nodes.
-
-* **FR3: Hazard Classification:** The gateway shall analyze incoming sensor data streams against predefined environmental thresholds to classify events (e.g., animal presence, soil displacement) as active hazards.
-
-* **FR4: Alert Dissemination:** Upon detecting a hazard, the gateway shall format the alert payload and broadcast it locally via C-V2X (Cellular Vehicle-to-Everything) protocols, while simultaneously pushing a JSON-formatted event log to the cloud mapping platform.
-
-* **FR5: Node Authentication (Anti-Spoofing):** The gateway shall verify the identity of the transmitting sensor node using a lightweight, pre-shared hardware identifier before accepting any hazard data.
-
-* **FR6: Dynamic Thresholding:** The gateway shall allow remote configuration of the hazard detection thresholds (e.g., adjusting the PIR sensor sensitivity parameters based on changing weather conditions or seasons).
-
-* **FR7: State Health Monitoring (Heartbeats):** Even in the absence of a hazard trigger, the sensor nodes shall execute a minimal "heartbeat" transmission every 2 hours to confirm operational status and ambient harvesting capability.
+- **FR1: Autonomous Power & Transmission:** The edge nodes shall utilize solar-harvesting and Li-Ion storage to maintain continuous operation, transmitting telemetry via LoRa LPWAN protocols.
+- **FR2: Telemetry Ingestion:** The Raspberry Pi gateway shall bridge the LoRa network to the internet, pushing JSON telemetry to a RESTful FastAPI backend.
+- **FR3: Time-Series Analysis:** The system shall utilize a time-series database to calculate the rate-of-change (RoC) of sensor data over a 15-minute window to predict hazard escalation.
+- **FR4: Event Classification:** The backend shall classify events into discrete hazard categories (e.g., `wildlife_detected`, `landslide_imminent`) based on sensor fusion logic.
+- **FR5: Interactive Visualization:** The frontend shall render a live web map plotting node locations, battery statuses, and highlighting active hazard zones.
 
 ### Non-Functional Requirements
 
-* **NFR1: Performance (Duty Cycle):** The passive sensor node shall achieve a maximum data transmission interval of 2 seconds when operating in an environment with a minimum ambient RF power density of -20dBm.
-
-* **NFR2: Scalability (Concurrency):** The gateway shall reliably process concurrent backscatter transmissions from multiple overlapping sensor nodes within a 50-meter radius without experiencing critical packet collision failure.
-
-* **NFR3: Fault Tolerance (Data Integrity):** To maintain system state during transmission drops, the gateway shall implement predictive data imputation algorithms capable of handling packet loss from the sensor nodes without triggering a false positive hazard alert.
-
-* **NFR4: Latency (Real-Time Processing):** The gateway shall process incoming backscatter data, classify the hazard, and initiate the outbound C-V2X warning broadcast with an end-to-end latency not exceeding 500 milliseconds.
+- **NFR1: Power Efficiency:** The edge nodes shall achieve a sleep current low enough to sustain operation for at least 72 hours without direct sunlight.
+- **NFR2: Transmission Range:** The LoRa communication layer shall reliably transmit data packets over a minimum distance of 1 kilometer in semi-obstructed outdoor environments.
+- **NFR3: Ingestion Latency:** The FastAPI backend shall process incoming telemetry and update the database in under 200 milliseconds.
 
 ## 7. Hardware Research
 
-### 1. Passive Sensor Nodes
+The following components have been researched and selected based on local availability and optimal power-to-performance ratios for autonomous field deployment:
 
-| Component | Prototype Recommendation |
-| --- | --- |
-| RF Energy Harvester | Dickson charge pump with HSMS-285C |
-| Storage Element | 0.1F to 1F supercapacitor, 5.5V |
-| Microcontroller | ATtiny85 |
-| Backscatter Switch | SKY13351 |
-| Sensors | HC-SR501 PIR(LDO removed), Ultra-Low-Power MEMS Accelerometer, Capacitive Soil Moisture Sensor |
-
-### 2. Smart Gateway
-
-| Component | Prototype Recommendation |
-| --- | --- |
-| RF Transceiver / SDR | RTL-SDR Blog V4 |
-| Edge Processor | Raspberry Pi board |
-| V2X / Cloud Module | ESP32 |
+| Category | Component | Justification |
+| --- | --- | --- |
+| **Communication** | SX1278 (Ra-02) LoRa Module | Operates at 433MHz; inexpensive and readily available locally. Replaces the unviable backscatter approach. |
+| **Edge Processing** | Arduino Pro Mini (3.3V / 8MHz) | Standard for micro-power nodes. Interfaces directly with 3.3V LoRa and sensors without logic shifters. |
+| **Gateway** | Raspberry Pi (3B+) | Powerful enough to handle continuous LoRa reception and JSON forwarding to the cloud. |
+| **Power Storage** | 18650 Li-Ion Cell (3.7V) | Ubiquitous and provides massive capacity for multi-day operation without sun. |
+| **Energy Harvesting** | 5V Mini Solar Panel (~100mA+) | Locally available; sufficient to trickle-charge the 18650 cell. |
+| **Charging Circuit** | TP4056 Module | Provides safe lithium battery charging and over-discharge protection. |
+| **Sensors** | HC-SR501 PIR, ADXL362, Capacitive Soil V2 | 3.3V native components selected for minimal power draw and digital interrupt capabilities. |
 
 
 ## 8. Project Timeline
 
-* ### Week 1 (2026 June 29 - 2026 July 5)
-
-Project ideation and core concept finalization.
-
-Finalized the core concept for Ghost_Alert, establishing the focus on utilizing ambient RF backscatter and zero-power nodes for environmental hazard detection.
-
-* ### Week 2 (2026 July 6 - 2026 July 12)
-
-Requirements definition and finalization.
-
-Defined and finalized the system's Functional Requirements (FRs) and Non-Functional Requirements (NFRs), establishing baseline metrics for latency, duty cycles, and fault tolerance.
-
-* ### Week 3 (2026 July 13 - 2026 July 19)
-
-System architecture finalization.
-
-Finalized the overall system architecture, mapping out the data flow and physical interactions between the passive "Ghost" sensor nodes and the smart roadside gateway.
-
-* ### Week 4 (2026 July 20 - 2026 July 26)
-
-Hardware selection and BOM finalization.
-
-Conducted component research and finalized the hardware bill of materials (BOM) for the prototype, including the ATtiny85 microcontroller, RTL-SDR gateway receiver, and energy harvesting circuitry.
-
-* ### Week 5 (2026 July 27 - 2026 August 2)
-
-Baseline sensor testing in the current phase.
-
-Testing individual sensor operations with the ATtiny85 microcontroller. To isolate variables, this phase bypasses the energy harvesting and ambient backscatter modulation. An ESP32 is temporarily utilized to power the ATtiny85 and sensors, acting as an interface to validate basic hazard detection logic.
-
-<figure>
-	<img src="Images/PIR/no_hazard.jpg" alt="PIR sensor with no hazards" />
-	<figcaption>PIR sensor baseline reading with no hazards detected.</figcaption>
-</figure>
-
-<figure>
-	<img src="Images/PIR/hazard.jpg" alt="PIR sensor with hazards" />
-	<figcaption>PIR sensor reading when a hazard is detected.</figcaption>
-</figure>
+- **Week 1 (June 29 - July 5):** Project ideation, establishing the focus on environmental hazard detection and early warning systems.
+- **Week 2 (July 6 - July 12):** Initial requirements definition and defining the scope of the hazards to monitor (wildlife and landslides).
+- **Week 3 (July 13 - July 19):** System architecture evaluation. Identified limitations with the ambient RF backscatter concept for long-range outdoor deployment.
+- **Week 4 (July 20 - July 26):** Hardware selection and initial BOM finalization. Began sourcing local components for bench testing.
+- **Week 5 (July 27 - August 2):** Baseline sensor testing. Breadboard prototyping of the PIR and Capacitive sensors using C++ in the Arduino IDE to validate digital/analog readings.
+- **Week 6 (August 3 - August 9):** Database engineering. Designed the relational schema in PostgreSQL (nodes, zones, hazards) and configured the InfluxDB buckets for time-series telemetry.
+- **Week 7 (August 10 - August 16):** Backend pipeline development. Built the FastAPI server, establishing Pydantic models and RESTful `POST` endpoints for data ingestion.
+- **Week 8 (August 17 - August 23):** Frontend core development. Scaffolded the React/Vite application and implemented the interactive Leaflet mapping engine.
+- **Week 9 (August 24 - August 30):** Administrative UI development. Built the secure, state-driven Admin Hub for remote hardware provisioning and lifecycle management.
+- **Week 10 (August 31 - September 6):** Predictive logic implementation. Integrated InfluxDB Flux queries into the Python backend to calculate soil saturation velocity and sustained micro-tilt.
+- **Week 11 (September 7 - September 13) [CURRENT]:** End-to-end integration and final architecture pivot. Successfully tested the full software pipeline (predictive DB logic & map visualization) using active Wi-Fi benchtop nodes.

@@ -1,0 +1,11 @@
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Remove the default background from Leaflet divIcons */
+.custom-svg-icon {
+  background: transparent !important;
+  border: none !important;
+}
